@@ -34,8 +34,10 @@ int main()
 	
 	fp = fopen ("/dev_usb000/backup_srk_srh.bin","w");
 	if(fp){
-		for(int i=0x00; i < 0x80; ++i)
+		for(int i=0x00; i < 0x80; ++i){
 			fputc(data[i], fp);
+		}
+		fclose(fp);
 	}
 	
 	lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6);
