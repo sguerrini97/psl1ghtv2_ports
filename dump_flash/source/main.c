@@ -1,4 +1,3 @@
-
 /*
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +16,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include <net/net.h>
-
 #include <lv2_syscall.h>
-#include <lv1_map.h>
-#include <udp_printf.h>
 
 /* NAND FLASH */
 
@@ -75,7 +70,7 @@ static FILE *open_dump(void)
 	fp = NULL;
 
 	for (i = 0; i < N(dump_path); i++) {
-		PRINTF("%s:%d: trying path '%s'\n", __func__, __LINE__, dump_path[i]);
+		printf("%s:%d: trying path '%s'\n", __func__, __LINE__, dump_path[i]);
 
 		fp = fopen(dump_path[i], "w");
 		if (fp)
@@ -83,9 +78,9 @@ static FILE *open_dump(void)
 	}
 
 	if (fp)
-		PRINTF("%s:%d: path '%s'\n", __func__, __LINE__, dump_path[i]);
+		printf("%s:%d: path '%s'\n", __func__, __LINE__, dump_path[i]);
 	else
-		PRINTF("%s:%d: file could not be opened\n", __func__, __LINE__);
+		printf("%s:%d: file could not be opened\n", __func__, __LINE__);
 
 	return fp;
 
@@ -112,7 +107,7 @@ int dump_nand_flash(void)
 
 	result = lv2_storage_open(NAND_FLASH_DEV_ID, &dev_handle);
 	if (result) {
-		PRINTF("%s:%d: lv2_storage_open failed (0x%08x)\n", __func__, __LINE__, result);
+		printf("%s:%d: lv2_storage_open failed (0x%08x)\n", __func__, __LINE__, result);
 		goto done;
 	}
 
@@ -122,31 +117,31 @@ int dump_nand_flash(void)
 
 	result = lv2_storage_get_device_info(NAND_FLASH_DEV_ID, &info);
 	if (result) {
-		PRINTF("%s:%d: lv2_storage_get_device_info failed (0x%08x)\n", __func__, __LINE__, result);
+		printf("%s:%d: lv2_storage_get_device_info failed (0x%08x)\n", __func__, __LINE__, result);
 		goto done;
 	}
 
-	PRINTF("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
+	printf("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
 
 	start_sector = NAND_FLASH_START_SECTOR;
 	sector_count = info.capacity;
 
 	while (sector_count >= NSECTORS) {
-		PRINTF("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, NSECTORS);
 
 		result = lv2_storage_read(dev_handle, 0, start_sector, NSECTORS, buf, &unknown2, NAND_FLASH_FLAGS);
 		if (result) {
-			PRINTF("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		PRINTF("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, NSECTORS);
 
 		result = fwrite(buf, 1, NSECTORS * NAND_FLASH_SECTOR_SIZE, fp);
 		if (result < 0) {
-			PRINTF("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -155,21 +150,21 @@ int dump_nand_flash(void)
 	}
 
 	while (sector_count) {
-		PRINTF("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
 		result = lv2_storage_read(dev_handle, 0, start_sector, 1, buf, &unknown2, NAND_FLASH_FLAGS);
 		if (result) {
-			PRINTF("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		PRINTF("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
 		result = fwrite(buf, 1, NAND_FLASH_SECTOR_SIZE, fp);
 		if (result < 0) {
-			PRINTF("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -188,7 +183,7 @@ done:
 
 	result = lv2_storage_close(dev_handle);
 	if (result)
-		PRINTF("%s:%d: lv2_storage_close failed (0x%08x)\n", __func__, __LINE__, result);
+		printf("%s:%d: lv2_storage_close failed (0x%08x)\n", __func__, __LINE__, result);
 
 	return result;
 
@@ -207,15 +202,16 @@ int dump_nor_flash(void)
 	FILE *fp;
 	int start_sector, sector_count;
 	uint32_t unknown2;
-	uint8_t buf[NOR_FLASH_SECTOR_SIZE * NSECTORS];
+	uint8_t buf[NOR_FLASH_SECTOR_SIZE * NSECTORS];						//buf = 512 * 16
 	int result;
 
 	dev_handle = 0;
 	fp = NULL;
-
+	
+	//device zugriff (handle)
 	result = lv2_storage_open(NOR_FLASH_DEV_ID, &dev_handle);
 	if (result) {
-		PRINTF("%s:%d: lv2_storage_open failed (0x%08x)\n", __func__, __LINE__, result);
+		printf("%s:%d: lv2_storage_open failed (0x%08x)\n", __func__, __LINE__, result);
 		goto done;
 	}
 
@@ -223,33 +219,35 @@ int dump_nor_flash(void)
 	if (!fp)
 		goto done;
 
+
+	//anzahl der sektoren des device auslesen
 	result = lv2_storage_get_device_info(NOR_FLASH_DEV_ID, &info);
 	if (result) {
-		PRINTF("%s:%d: lv2_storage_get_device_info failed (0x%08x)\n", __func__, __LINE__, result);
+		printf("%s:%d: lv2_storage_get_device_info failed (0x%08x)\n", __func__, __LINE__, result);
 		goto done;
 	}
 
-	PRINTF("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
+	printf("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
+
+
 
 	start_sector = NOR_FLASH_START_SECTOR;
 	sector_count = info.capacity;
 
 	while (sector_count >= NSECTORS) {
-		PRINTF("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
-			__func__, __LINE__, start_sector, NSECTORS);
+		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n", __func__, __LINE__, start_sector, NSECTORS);
 
 		result = lv2_storage_read(dev_handle, 0, start_sector, NSECTORS, buf, &unknown2, NOR_FLASH_FLAGS);
 		if (result) {
-			PRINTF("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		PRINTF("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
-			__func__, __LINE__, start_sector, NSECTORS);
+		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n", __func__, __LINE__, start_sector, NSECTORS);
 
 		result = fwrite(buf, 1, NSECTORS * NOR_FLASH_SECTOR_SIZE, fp);
 		if (result < 0) {
-			PRINTF("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -258,21 +256,21 @@ int dump_nor_flash(void)
 	}
 
 	while (sector_count) {
-		PRINTF("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
 		result = lv2_storage_read(dev_handle, 0, start_sector, 1, buf, &unknown2, NOR_FLASH_FLAGS);
 		if (result) {
-			PRINTF("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		PRINTF("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
 		result = fwrite(buf, 1, NOR_FLASH_SECTOR_SIZE, fp);
 		if (result < 0) {
-			PRINTF("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -291,7 +289,7 @@ done:
 
 	result = lv2_storage_close(dev_handle);
 	if (result)
-		PRINTF("%s:%d: lv2_storage_close failed (0x%08x)\n", __func__, __LINE__, result);
+		printf("%s:%d: lv2_storage_close failed (0x%08x)\n", __func__, __LINE__, result);
 
 	return result;
 
@@ -305,39 +303,31 @@ int main(int argc, char **argv)
 {
 	int vflash_on, result;
 
-	netInitialize();
+	printf("%s:%d: start\n", __func__, __LINE__);
 
-	udp_printf_init();
+	vflash_on = is_vflash_on();						//variable vflash_on ist gleich rückgabe von funktion is_vflash_on()
 
-	PRINTF("%s:%d: start\n", __func__, __LINE__);
-
-	vflash_on = is_vflash_on();
-
-	PRINTF("%s:%d: vflash %s\n", __func__, __LINE__, vflash_on ? "on" : "off");
+	printf("%s:%d: vflash %s\n", __func__, __LINE__, vflash_on ? "on" : "off");
 
 	if (vflash_on) {
-		result = dump_nor_flash();
+		result = dump_nor_flash();					//result ist gleich rückgabe von funktion dump_nor_flash()
 		if (result) {
-			PRINTF("%s:%d: dump_nor_flash failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: dump_nor_flash failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 	} else {
 		result = dump_nand_flash();
 		if (result) {
-			PRINTF("%s:%d: dump_nand_flash failed (0x%08x)\n", __func__, __LINE__, result);
+			printf("%s:%d: dump_nand_flash failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 	}
 
-	PRINTF("%s:%d: end\n", __func__, __LINE__);
+	printf("%s:%d: end\n", __func__, __LINE__);
 
 	lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6);
 
 done:
-
-	udp_printf_deinit();
-
-	netDeinitialize();
 
 	return 0;
 }
