@@ -21,8 +21,8 @@ SOURCES		:=	../../common/source source
 DATA		:=	data
 INCLUDES	:=	../../common/include include
 
-TITLE		:=	AIM Commands
-APPID		:=	AIMC00003
+TITLE		:=	RSOD Fix
+APPID		:=	RSODF0003
 CONTENTID	:=      UP0001-$(APPID)_00-0000000000000000
 PKGFILES	:=	$(CURDIR)/release
 

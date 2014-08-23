@@ -17,9 +17,9 @@ include $(PSL1GHT)/ppu_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	../common/source source
+SOURCES		:=	../../common/source source
 DATA		:=	data
-INCLUDES	:=	../common/include include
+INCLUDES	:=	../../common/include include
 
 TITLE		:=	Dump SRK/SRH
 APPID		:=	DSRK00003
