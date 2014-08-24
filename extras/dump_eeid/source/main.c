@@ -190,6 +190,7 @@ int dump_nand_flash(void)
 			fclose(fp);
 		}
 		fclose(usb);
+		remove("/dev_hdd0/tmp/" DUMP_FILENAME);
 		lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //usb copy finished
 	}
 
@@ -314,6 +315,7 @@ int dump_nor_flash(void)
 			fclose(fp);
 		}
 		fclose(usb);
+		remove("/dev_hdd0/tmp/" DUMP_FILENAME);
 		lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //usb copy finished
 	}
 	
