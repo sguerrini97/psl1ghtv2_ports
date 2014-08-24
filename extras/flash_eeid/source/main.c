@@ -22,19 +22,18 @@
 
 #define NAND_FLASH_DEV_ID			0x100000000000001ull
 #define NAND_FLASH_SECTOR_SIZE		0x200ull
-#define NAND_FLASH_START_SECTOR		0x0ull
+#define NAND_FLASH_START_SECTOR		0x404ull
 #define NAND_FLASH_FLAGS			0x22ull
-#define NAND_BYTES					268435455
 
 /* NOR FLASH */
 
 #define NOR_FLASH_DEV_ID			0x100000000000004ull
 #define NOR_FLASH_SECTOR_SIZE		0x200ull
-#define NOR_FLASH_START_SECTOR		0x0ull
+#define NOR_FLASH_START_SECTOR		0x178ull
 #define NOR_FLASH_FLAGS				0x22ull
-#define NOR_BYTES					16777215
 
-#define DUMP_FILENAME				"flash.bin"
+#define EEID_SIZE					0x80 //in sectors
+#define DUMP_FILENAME				"eeid.bin"
 
 static const char *dump_path[] = {
 	"/dev_usb000/" DUMP_FILENAME,
@@ -74,7 +73,7 @@ static FILE *open_dump(void)
 	for (i = 0; i < N(dump_path); i++) {
 		printf("%s:%d: trying path '%s'\n", __func__, __LINE__, dump_path[i]);
 
-		fp = fopen(dump_path[i], "wb");
+		fp = fopen(dump_path[i], "rb");
 		if (fp)
 			break;
 	}
@@ -99,7 +98,6 @@ int dump_nand_flash(void)
 	uint32_t dev_handle;
 	struct storage_device_info info;
 	FILE *fp;
-	FILE *usb;
 	int start_sector, sector_count;
 	uint32_t unknown2;
 	uint8_t buf[NAND_FLASH_SECTOR_SIZE * NSECTORS];
@@ -114,8 +112,7 @@ int dump_nand_flash(void)
 		goto done;
 	}
 
-	//fp = open_dump();
-	fp = fopen("/dev_hdd0/tmp/" DUMP_FILENAME, "w");
+	fp = open_dump();
 	if (!fp)
 		goto done;
 
@@ -128,24 +125,25 @@ int dump_nand_flash(void)
 	printf("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
 
 	start_sector = NAND_FLASH_START_SECTOR;
-	sector_count = info.capacity;
+	//sector_count = info.capacity;
+	sector_count = EEID_SIZE;
 
 	while (sector_count >= NSECTORS) {
 		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, NSECTORS);
 
-		result = lv2_storage_read(dev_handle, 0, start_sector, NSECTORS, buf, &unknown2, NAND_FLASH_FLAGS);
-		if (result) {
-			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+		result = fread(buf, 1, NSECTORS * NAND_FLASH_SECTOR_SIZE, fp);
+		if (result < 0) {
+			printf("%s:%d: fread failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: writing data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, NSECTORS);
 
-		result = fwrite(buf, 1, NSECTORS * NAND_FLASH_SECTOR_SIZE, fp);
-		if (result < 0) {
-			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+		result = lv2_storage_write(dev_handle, 0, start_sector, NSECTORS, buf, &unknown2, NAND_FLASH_FLAGS);
+		if (result) {
+			printf("%s:%d: lv2_storage_write failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -157,18 +155,18 @@ int dump_nand_flash(void)
 		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
-		result = lv2_storage_read(dev_handle, 0, start_sector, 1, buf, &unknown2, NAND_FLASH_FLAGS);
-		if (result) {
-			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+		result = fread(buf, 1, NAND_FLASH_SECTOR_SIZE, fp);
+		if (result < 0) {
+			printf("%s:%d: fread failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: writing data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
-		result = fwrite(buf, 1, NAND_FLASH_SECTOR_SIZE, fp);
-		if (result < 0) {
-			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+		result = lv2_storage_write(dev_handle, 0, start_sector, 1, buf, &unknown2, NAND_FLASH_FLAGS);
+		if (result) {
+			printf("%s:%d: lv2_storage_write failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -176,22 +174,8 @@ int dump_nand_flash(void)
 		sector_count -= 1;
 	}
 
-	lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //dump finished
-	
-	usb = open_dump();
+	lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //write finished
 	fclose(fp);
-	if(usb){
-		fp = fopen("/dev_hdd0/tmp/" DUMP_FILENAME, "rb");
-		if(fp){
-			for(unsigned long long int i = 0; i < NAND_BYTES; i += sizeof(uint8_t) * NAND_FLASH_SECTOR_SIZE * NSECTORS){
-				fread(buf, sizeof(uint8_t), NAND_FLASH_SECTOR_SIZE * NSECTORS, fp);
-				fwrite(buf, sizeof(uint8_t), NAND_FLASH_SECTOR_SIZE * NSECTORS, usb);
-			}
-			fclose(fp);
-		}
-		fclose(usb);
-		lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //usb copy finished
-	}
 
 	return 0;
 
@@ -219,7 +203,6 @@ int dump_nor_flash(void)
 	uint32_t dev_handle;
 	struct storage_device_info info;
 	FILE *fp;
-	FILE *usb;
 	int start_sector, sector_count;
 	uint32_t unknown2;
 	uint8_t buf[NOR_FLASH_SECTOR_SIZE * NSECTORS];						//buf = 512 * 16
@@ -235,8 +218,7 @@ int dump_nor_flash(void)
 		goto done;
 	}
 
-	//fp = open_dump();
-	fp = fopen("/dev_hdd0/tmp/" DUMP_FILENAME, "w");
+	fp = open_dump();
 	if (!fp)
 		goto done;
 
@@ -250,25 +232,24 @@ int dump_nor_flash(void)
 
 	printf("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
 
-
-
 	start_sector = NOR_FLASH_START_SECTOR;
-	sector_count = info.capacity;
+	//sector_count = info.capacity;
+	sector_count = EEID_SIZE;
 
 	while (sector_count >= NSECTORS) {
 		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n", __func__, __LINE__, start_sector, NSECTORS);
 
-		result = lv2_storage_read(dev_handle, 0, start_sector, NSECTORS, buf, &unknown2, NOR_FLASH_FLAGS);
-		if (result) {
-			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+		result = fread(buf, 1, NSECTORS * NOR_FLASH_SECTOR_SIZE, fp);
+		if (result < 0) {
+			printf("%s:%d: fread failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n", __func__, __LINE__, start_sector, NSECTORS);
+		printf("%s:%d: writing data start_sector (0x%08x) sector_count (0x%08x)\n", __func__, __LINE__, start_sector, NSECTORS);
 
-		result = fwrite(buf, 1, NSECTORS * NOR_FLASH_SECTOR_SIZE, fp);
-		if (result < 0) {
-			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+		result = lv2_storage_write(dev_handle, 0, start_sector, NSECTORS, buf, &unknown2, NOR_FLASH_FLAGS);
+		if (result) {
+			printf("%s:%d: lv2_storage_write failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -280,18 +261,18 @@ int dump_nor_flash(void)
 		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
-		result = lv2_storage_read(dev_handle, 0, start_sector, 1, buf, &unknown2, NOR_FLASH_FLAGS);
-		if (result) {
-			printf("%s:%d: lv2_storage_read failed (0x%08x)\n", __func__, __LINE__, result);
+		result = fread(buf, 1, NOR_FLASH_SECTOR_SIZE, fp);
+		if (result < 0) {
+			printf("%s:%d: fread failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
-		printf("%s:%d: dumping data start_sector (0x%08x) sector_count (0x%08x)\n",
+		printf("%s:%d: writing data start_sector (0x%08x) sector_count (0x%08x)\n",
 			__func__, __LINE__, start_sector, 1);
 
-		result = fwrite(buf, 1, NOR_FLASH_SECTOR_SIZE, fp);
-		if (result < 0) {
-			printf("%s:%d: fwrite failed (0x%08x)\n", __func__, __LINE__, result);
+		result = lv2_storage_write(dev_handle, 0, start_sector, 1, buf, &unknown2, NOR_FLASH_FLAGS);
+		if (result) {
+			printf("%s:%d: lv2_storage_write failed (0x%08x)\n", __func__, __LINE__, result);
 			goto done;
 		}
 
@@ -301,20 +282,7 @@ int dump_nor_flash(void)
 
 	lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //dump finished
 
-	usb = open_dump();
 	fclose(fp);
-	if(usb){
-		fp = fopen("/dev_hdd0/tmp/" DUMP_FILENAME, "rb");
-		if(fp){
-			for(unsigned long long int i = 0; i < NOR_BYTES; i += sizeof(uint8_t) * NOR_FLASH_SECTOR_SIZE * NSECTORS){
-				fread(buf, sizeof(uint8_t), NOR_FLASH_SECTOR_SIZE * NSECTORS, fp);
-				fwrite(buf, sizeof(uint8_t), NOR_FLASH_SECTOR_SIZE * NSECTORS, usb);
-			}
-			fclose(fp);
-		}
-		fclose(usb);
-		lv2_sm_ring_buzzer(0x1004, 0xa, 0x1b6); //usb copy finished
-	}
 	
 	return 0;
 

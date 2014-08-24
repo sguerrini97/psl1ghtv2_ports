@@ -22,19 +22,18 @@
 
 #define NAND_FLASH_DEV_ID			0x100000000000001ull
 #define NAND_FLASH_SECTOR_SIZE		0x200ull
-#define NAND_FLASH_START_SECTOR		0x0ull
+#define NAND_FLASH_START_SECTOR		0x404ull
 #define NAND_FLASH_FLAGS			0x22ull
-#define NAND_BYTES					268435455
 
 /* NOR FLASH */
 
 #define NOR_FLASH_DEV_ID			0x100000000000004ull
 #define NOR_FLASH_SECTOR_SIZE		0x200ull
-#define NOR_FLASH_START_SECTOR		0x0ull
+#define NOR_FLASH_START_SECTOR		0x178ull
 #define NOR_FLASH_FLAGS				0x22ull
-#define NOR_BYTES					16777215
 
-#define DUMP_FILENAME				"flash.bin"
+#define EEID_SIZE					0x80 //in sectors
+#define DUMP_FILENAME				"eeid.bin"
 
 static const char *dump_path[] = {
 	"/dev_usb000/" DUMP_FILENAME,
@@ -128,7 +127,8 @@ int dump_nand_flash(void)
 	printf("%s:%d: capacity (0x%016llx)\n", __func__, __LINE__, info.capacity);
 
 	start_sector = NAND_FLASH_START_SECTOR;
-	sector_count = info.capacity;
+	//sector_count = info.capacity;
+	sector_count = EEID_SIZE;
 
 	while (sector_count >= NSECTORS) {
 		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n",
@@ -183,7 +183,7 @@ int dump_nand_flash(void)
 	if(usb){
 		fp = fopen("/dev_hdd0/tmp/" DUMP_FILENAME, "rb");
 		if(fp){
-			for(unsigned long long int i = 0; i < NAND_BYTES; i += sizeof(uint8_t) * NAND_FLASH_SECTOR_SIZE * NSECTORS){
+			for(unsigned long long int i = 0; i < EEID_SIZE * NAND_FLASH_SECTOR_SIZE; i += sizeof(uint8_t) * NAND_FLASH_SECTOR_SIZE * NSECTORS){
 				fread(buf, sizeof(uint8_t), NAND_FLASH_SECTOR_SIZE * NSECTORS, fp);
 				fwrite(buf, sizeof(uint8_t), NAND_FLASH_SECTOR_SIZE * NSECTORS, usb);
 			}
@@ -253,7 +253,8 @@ int dump_nor_flash(void)
 
 
 	start_sector = NOR_FLASH_START_SECTOR;
-	sector_count = info.capacity;
+	//sector_count = info.capacity;
+	sector_count = EEID_SIZE;
 
 	while (sector_count >= NSECTORS) {
 		printf("%s:%d: reading data start_sector (0x%08x) sector_count (0x%08x)\n", __func__, __LINE__, start_sector, NSECTORS);
@@ -306,7 +307,7 @@ int dump_nor_flash(void)
 	if(usb){
 		fp = fopen("/dev_hdd0/tmp/" DUMP_FILENAME, "rb");
 		if(fp){
-			for(unsigned long long int i = 0; i < NOR_BYTES; i += sizeof(uint8_t) * NOR_FLASH_SECTOR_SIZE * NSECTORS){
+			for(unsigned long long int i = 0; i < EEID_SIZE * NOR_FLASH_SECTOR_SIZE; i += sizeof(uint8_t) * NOR_FLASH_SECTOR_SIZE * NSECTORS){
 				fread(buf, sizeof(uint8_t), NOR_FLASH_SECTOR_SIZE * NSECTORS, fp);
 				fwrite(buf, sizeof(uint8_t), NOR_FLASH_SECTOR_SIZE * NSECTORS, usb);
 			}
