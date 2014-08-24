@@ -31,7 +31,7 @@
 /*
  * lv2 syscall 811 (4.46)
  */
-#define _LV2_SYSCALL_HVCALL_ADDR	0x80000000001B63A0ull
+#define _LV2_SYSCALL_HVCALL_ADDR	0x80000000001B5674ull
 
 #define _LV2_SYSCALL_HVCALL_PATCH(num)										\
 	uint64_t old_code[4];											\
