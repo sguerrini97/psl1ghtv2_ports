@@ -6,7 +6,6 @@
 #include <lv2_syscall.h>
 
 //"UI"
-//#include <NoRSX.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 #include <io/pad.h>
@@ -98,6 +97,8 @@ int main()
 	
 	TTF_Quit();
 	SDL_FreeSurface(helptxtSurface);
+	SDL_FreeSurface(cputxtSurface);
+	SDL_FreeSurface(rsxtxtSurface);
 	SDL_FreeSurface(screen);
 	SDL_Quit();
 	
