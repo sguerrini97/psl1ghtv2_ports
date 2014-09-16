@@ -38,6 +38,14 @@ struct platform_info {
 	uint32_t unknown;
 	uint8_t res2[4];
 };
+/*
+ * sys_game_get_temperature
+ */
+static inline int sys_game_get_temperature(int proc, uint32_t * temperature)
+{
+	lv2syscall2(383, proc, (uint64_t) temperature);
+	return_to_user_prog(int);
+}
 
 /*
  * lv2_peek
