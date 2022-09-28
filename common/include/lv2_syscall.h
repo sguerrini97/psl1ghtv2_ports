@@ -342,4 +342,45 @@ static inline int lv2_get_target_type(uint64_t *type)
 	return_to_user_prog(int);
 }
 
+static inline int lv2_fs_open(const char *path, int flags, int *fd, uint64_t mode, const void *arg, uint64_t size){
+	lv2syscall6(0x321, (uint64_t) path, (uint64_t) flags, (uint64_t) fd, mode, (uint64_t) arg, size);
+	return_to_user_prog(int);
+}	
+
+static inline int lv2_fs_read(int fd, void *buf, uint64_t nbytes, uint64_t *nread){
+	lv2syscall4(0x322, (uint64_t) fd, (uint64_t) buf, nbytes, (uint64_t) nread);
+	return_to_user_prog(int);
+}
+
+static inline int lv2_fs_write(int fd, void *buf, uint64_t nbytes, uint64_t *nwrite){
+	lv2syscall4(0x323, (uint64_t) fd, (uint64_t) buf, nbytes, (uint64_t) nwrite);
+	return_to_user_prog(int);
+}
+
+static inline int lv2_fs_close(int fd){
+	lv2syscall1(0x324, (uint64_t) fd);
+	return_to_user_prog(int);
+}
+
+static inline int lv2_fs_mount(char const* Device_Name, char const* Device_File_System, char const* Device_Path, int unk0, int wp, int unk1 , char const** unk2){
+	lv2syscall7(0x345, (uint64_t) Device_Name, (uint64_t) Device_File_System, (uint64_t) Device_Path, (uint64_t) unk0, (uint64_t) wp, (uint64_t) unk1, (uint64_t) unk2);
+	return_to_user_prog(int);
+}
+
+static inline int lv2_fs_umount(const char* device_path, int unk0, int unk1){
+	lv2syscall3(0x346, (uint64_t) device_path, (uint64_t) unk0, (uint64_t) unk1);
+	return_to_user_prog(int);
+}
+
+static inline int lv2_fs_fsync(int fd){
+	lv2syscall1(0x334, (uint64_t) fd);
+	return_to_user_prog(int);
+}
+
+static inline int sys_fs_mount(char const* deviceName, char const* deviceFileSystem, char const* devicePath, int writeProt)
+{
+	lv2syscall8(837, (uint64_t) deviceName, (uint64_t) deviceFileSystem, (uint64_t) devicePath, 0, (uint64_t) writeProt, 0, 0, 0 );
+	return_to_user_prog(int);
+}
+
 #endif
